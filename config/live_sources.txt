@@ -1,0 +1,5 @@
+# 格式：名称|URL
+xuy132综合直播|https://raw.githubusercontent.com/xuy132/collect-tv-txt/main/merged_output.m3u
+xuy132精简版|https://raw.githubusercontent.com/xuy132/collect-tv-txt/main/live_lite.m3u
+IPTV-org中国|https://iptv-org.github.io/iptv/countries/cn.m3u
+YueChan港澳台|https://raw.githubusercontent.com/YueChan/Live/main/GNTV.m3u
