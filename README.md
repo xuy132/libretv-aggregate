@@ -8,9 +8,9 @@
 
 ## 订阅地址
 
-在 LibreTV「设置 → 数据源 → 数据源订阅」粘贴：https://raw.githubusercontent.com/xuy132/libretv-aggregate/main/dist/sources.json 点「添加并同步」即可。
-TVBox：设置 → 配置地址 → 粘贴：https://raw.githubusercontent.com/xuy132/libretv-aggregate/main/dist/tvbox.json
-地址固定，无需更换。
+- 在 LibreTV「设置 → 数据源 → 数据源订阅」粘贴：https://raw.githubusercontent.com/xuy132/libretv-aggregate/main/dist/sources.json 点「添加并同步」即可。
+- TVBox：设置 → 配置地址 → 粘贴：https://raw.githubusercontent.com/xuy132/libretv-aggregate/main/dist/tvbox.json
+- 地址固定，无需更换。
 
 ### 备用
 
