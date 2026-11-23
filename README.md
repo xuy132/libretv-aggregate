@@ -16,6 +16,24 @@
 - ghproxy：`https://ghproxy.net/https://raw.githubusercontent.com/xuy132/libretv-aggregate/main/dist/sources.json`
 - jsDelivr：`https://cdn.jsdelivr.net/gh/xuy132/libretv-aggregate@main/dist/sources.json`
 
+地址永久固定，无需频繁更换。
+
+---
+
+## 项目结构
+
+```text
+libretv-aggregate/
+├── .github/workflows/
+│   └── update.yml              # 定时自动更新
+├── config/
+│   ├── vod_sources.txt         # 点播源订阅地址
+│   └── live_sources.txt        # 直播源地址（支持 EPG）
+├── scripts/
+│   └── merge.py                # 聚合 + 过滤 + 测活脚本
+├── dist/
+│   └── sources.json            # 最终生成的订阅文件
+└── README.md
 ## 配置
 
 | 文件 | 说明 |
