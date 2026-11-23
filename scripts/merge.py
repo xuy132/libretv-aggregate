@@ -1,47 +1,49 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-LibreTV 聚合订阅生成器（增强版）
+LibreTV 聚合订阅生成器（增强版 + 直播测活）
 功能：
-- 支持 LibreTV JSON / ziyuanzhan / TVBox 配置
+- 支持 LibreTV JSON / ziyuanzhan / TVBox
 - 自动过滤低评分、慢速源
 - 按响应速度排序
-- 直播源支持 EPG 节目单
+- 直播源支持 EPG
+- 自动统计直播频道数量 + 抽样测活
 """
 
 import json
 import os
 import re
+import socket
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from urllib.parse import urlparse
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # ==================== 可调参数 ====================
 CONFIG_DIR = "config"
 OUTPUT_FILE = "dist/sources.json"
 
-# 过滤条件
-MIN_RATING = 4.0          # 最低评分（ziyuanzhan 有 rating 才生效）
-MAX_RESPONSE_MS = 3000    # 最大响应时间（毫秒），超过丢弃
-MIN_UPTIME = 80           # 最低在线率（%）
+MIN_RATING = 4.0
+MAX_RESPONSE_MS = 3000
+MIN_UPTIME = 80
 
-# 是否开启成人源过滤（True = 标记为 isAdult）
 MARK_ADULT = True
-
-# 并发拉取数量
 MAX_WORKERS = 8
+
+# 直播测活参数
+LIVE_CHECK_SAMPLE = 8          # 每个源最多抽样测几个频道
+LIVE_CHECK_TIMEOUT = 6         # 单个频道测活超时（秒）
+LIVE_MIN_CHANNELS = 5          # 频道数太少的源可选择过滤
 # =================================================
 
 def fetch(url: str, timeout=20):
     req = urllib.request.Request(url, headers={
-        "User-Agent": "Mozilla/5.0 (compatible; LibreTV-Aggregator/2.0)"
+        "User-Agent": "Mozilla/5.0 (compatible; LibreTV-Aggregator/2.1)"
     })
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return r.read().decode("utf-8", errors="ignore")
 
 def load_config(path: str):
-    """读取 txt，支持 名称|URL 或 名称|URL|EPG"""
     items = []
     if not os.path.exists(path):
         return items
@@ -69,26 +71,20 @@ def is_adult(name: str) -> bool:
     return any(k.lower() in name.lower() for k in keywords)
 
 def parse_tvbox(data: dict):
-    """解析 TVBox 配置，只取 type=1 的直连采集站 + lives"""
-    sources = []
-    lives = []
-
-    # 点播 sites
+    sources, lives = [], []
     for site in data.get("sites", []):
-        if site.get("type") == 1 and site.get("api"):  # type=1 为苹果CMS
+        if site.get("type") == 1 and site.get("api"):
             api = normalize_api(site["api"])
             sources.append({
                 "name": site.get("name") or "TVBox源",
                 "url": api,
                 "detail": site.get("ext") or "",
                 "isAdult": is_adult(site.get("name", "")),
-                "responseTime": 9999  # TVBox 无测速信息，排后面
+                "responseTime": 9999
             })
-
-    # 直播 lives
     for live in data.get("lives", []):
         url = live.get("url") or live.get("channels")
-        if url and isinstance(url, str) and (url.endswith(".m3u") or url.endswith(".m3u8") or "m3u" in url):
+        if url and isinstance(url, str) and ("m3u" in url.lower() or url.endswith(".m3u8")):
             lives.append({
                 "name": live.get("name") or "TVBox直播",
                 "url": url,
@@ -97,13 +93,10 @@ def parse_tvbox(data: dict):
     return sources, lives
 
 def process_vod_item(item: dict, default_name: str):
-    """把各种格式统一成 LibreTV 源结构，并返回是否通过过滤"""
     api = item.get("url") or item.get("api") or ""
     if not api:
         return None
     api = normalize_api(api)
-
-    # 只保留看起来像采集接口的
     if "provide/vod" not in api and not re.search(r"/api\.php/provide/vod", api):
         return None
 
@@ -117,7 +110,6 @@ def process_vod_item(item: dict, default_name: str):
     except:
         uptime = 100
 
-    # ===== 过滤条件 =====
     if rating is not None and rating < MIN_RATING:
         return None
     if response_time > MAX_RESPONSE_MS:
@@ -133,6 +125,62 @@ def process_vod_item(item: dict, default_name: str):
         "responseTime": response_time,
         "rating": rating
     }
+
+def parse_m3u_channels(m3u_content: str):
+    """解析 M3U，返回频道流地址列表"""
+    channels = []
+    lines = m3u_content.splitlines()
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+        if line.startswith("#EXTINF"):
+            # 下一行通常是流地址
+            if i + 1 < len(lines):
+                stream = lines[i + 1].strip()
+                if stream and not stream.startswith("#"):
+                    channels.append(stream)
+            i += 2
+        else:
+            i += 1
+    return channels
+
+def check_stream(url: str, timeout=LIVE_CHECK_TIMEOUT) -> bool:
+    """简单测活：能建立连接并读到一点数据就算可用"""
+    try:
+        req = urllib.request.Request(url, headers={
+            "User-Agent": "Mozilla/5.0 (compatible; LibreTV-Checker/1.0)",
+            "Connection": "close"
+        })
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            # 读一点数据确认不是空响应
+            chunk = r.read(1024)
+            return len(chunk) > 0
+    except Exception:
+        return False
+
+def analyze_live_source(url: str, name: str):
+    """统计频道数 + 抽样测活"""
+    try:
+        content = fetch(url, timeout=25)
+        channels = parse_m3u_channels(content)
+        total = len(channels)
+        if total == 0:
+            return total, 0, 0.0
+
+        # 抽样测活
+        sample = channels[:LIVE_CHECK_SAMPLE] if total > LIVE_CHECK_SAMPLE else channels
+        alive = 0
+        with ThreadPoolExecutor(max_workers=min(6, len(sample))) as executor:
+            futures = [executor.submit(check_stream, u) for u in sample]
+            for f in as_completed(futures):
+                if f.result():
+                    alive += 1
+
+        alive_rate = round(alive / len(sample) * 100, 1) if sample else 0.0
+        return total, alive, alive_rate
+    except Exception as e:
+        print(f"    → 测活失败: {e}")
+        return 0, 0, 0.0
 
 def main():
     sources = []
@@ -152,16 +200,15 @@ def main():
             data = json.loads(content)
 
             items = []
-            # 多种格式兼容
             if isinstance(data, list):
                 items = data
-            elif "sources" in data:                 # LibreTV 标准
+            elif "sources" in data:
                 items = data["sources"]
-            elif "data" in data:                    # ziyuanzhan online.json
+            elif "data" in data:
                 items = data["data"]
             elif "resources" in data:
                 items = data["resources"]
-            elif "sites" in data:                   # TVBox
+            elif "sites" in data:
                 tv_sources, tv_lives = parse_tvbox(data)
                 for s in tv_sources:
                     if s["url"] not in seen_vod:
@@ -185,38 +232,49 @@ def main():
         except Exception as e:
             print(f"    → 失败: {e}")
 
-    # ---------- 直播源（带 EPG）----------
+    # ---------- 直播源（带 EPG + 测活）----------
     live_list = load_config(os.path.join(CONFIG_DIR, "live_sources.txt"))
-    print(f"\n开始处理 {len(live_list)} 个直播源...")
+    print(f"\n开始处理 {len(live_list)} 个直播源（含测活）...\n")
 
     for conf in live_list:
         url = conf["url"]
         if url in seen_live:
             continue
         seen_live.add(url)
+
+        print(f"[LIVE] {conf['name']}")
+        total, alive, rate = analyze_live_source(url, conf["name"])
+        print(f"    → 频道数: {total} | 抽样存活: {alive}/{min(total, LIVE_CHECK_SAMPLE)} ({rate}%)")
+
+        # 可选：过滤频道太少的源
+        # if total < LIVE_MIN_CHANNELS:
+        #     print("    → 频道过少，已跳过")
+        #     continue
+
         live_item = {
             "name": conf["name"],
-            "url": url
+            "url": url,
+            "channelCount": total,
+            "sampleAlive": alive,
+            "sampleAliveRate": rate
         }
         if conf.get("epg"):
             live_item["epg"] = conf["epg"]
         live_sources.append(live_item)
-        print(f"[LIVE] {conf['name']}" + (" (带EPG)" if conf.get("epg") else ""))
 
     # ---------- 按响应速度排序 ----------
     sources.sort(key=lambda x: (x.get("responseTime", 9999), -(x.get("rating") or 0)))
 
-    # 清理临时字段
     for s in sources:
         s.pop("responseTime", None)
         s.pop("rating", None)
 
     # ---------- 输出 ----------
     result = {
-        "name": "聚合订阅（过滤+排序+EPG）",
+        "name": "聚合订阅（过滤+排序+EPG+测活）",
         "version": 2,
         "snapshotDate": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
-        "generatedBy": "libretv-aggregate-v2",
+        "generatedBy": "libretv-aggregate-v2.1",
         "filter": {
             "minRating": MIN_RATING,
             "maxResponseMs": MAX_RESPONSE_MS,
@@ -231,7 +289,7 @@ def main():
         json.dump(result, f, ensure_ascii=False, indent=2)
 
     print("\n========== 完成 ==========")
-    print(f"点播源: {len(sources)} 个（已过滤低分/慢速）")
+    print(f"点播源: {len(sources)} 个")
     print(f"直播源: {len(live_sources)} 个")
     print(f"输出: {OUTPUT_FILE}")
 
