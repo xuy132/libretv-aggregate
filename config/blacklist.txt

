@@ -1,0 +1,4 @@
+# 黑名单：每行一个 URL 前缀、完整 URL 或 host
+# 示例：
+# bad-api.example.com
+# https://example.com/api.php/provide/vod
