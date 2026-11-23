@@ -1,12 +1,27 @@
 # libretv-aggregate
-定期检测各站点可用性，生成静态 JSON + HTML 页面。
 
+定期检测各站点可用性，生成静态JSON页面。
+
+
+项目结构:
+
+
+libretv-aggregate/
+├── .github/workflows/update.yml
+├── config/
+│   ├── vod_sources.txt          # 点播订阅地址（LibreTV JSON）
+│   └── live_sources.txt         # 直播源地址（M3U 或 TXT）
+├── scripts/
+│   └── merge.py
+├── dist/
+│   └── sources.json             # 最终生成的订阅文件
+└── README.md
 
 
 订阅地址
-在 LibreTV 的「设置 → 数据源 → 数据源订阅」粘贴：
-https://raw.githubusercontent.com/xuy132/libretv-aggregate/main/dist/sources.json
-
+在 LibreTV 的「设置 → 数据源 → 数据源订阅」
+粘贴：
+https://raw.githubusercontent.com/xuy132/libretv-aggregate/main/dist/sources.json 
 
 
 点「添加并同步」即可。地址永久固定，不需要再换。
