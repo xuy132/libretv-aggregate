@@ -1,3 +1,5 @@
-# 格式：名称|M3U地址|EPG地址（EPG可选）
+# 名称|M3U地址|EPG地址
 IPTV-org中国|https://iptv-org.github.io/iptv/countries/cn.m3u|https://iptv-org.github.io/epg/guides/cn.xml.gz
 fanmingming|https://live.fanmingming.cn/tv/m3u/ipv6.m3u|https://live.fanmingming.cn/tv/e.xml
+IPTV-org香港|https://iptv-org.github.io/iptv/countries/hk.m3u|https://iptv-org.github.io/epg/guides/hk.xml.gz
+IPTV-org台湾|https://iptv-org.github.io/iptv/countries/tw.m3u|https://iptv-org.github.io/epg/guides/tw.xml.gz
