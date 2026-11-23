@@ -1,0 +1,5 @@
+# 格式：名称|URL   （名称可选，不写就用URL当名字）
+ziyuanzhan在线|https://mylazily.github.io/ziyuanzhan/data/online.json
+loloshilele|https://raw.githubusercontent.com/loloshilele/libretv-sources/main/dist/libretv-sources.json
+龙哥源|https://raw.githubusercontent.com/ljfbin2/tv-sources/main/sources.json
+双源合集|https://raw.githubusercontent.com/haojun19980728-prog/libretv-source-list/main/libretv-sources.json
