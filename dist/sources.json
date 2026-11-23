@@ -1,7 +1,7 @@
 {
   "name": "聚合订阅（过滤+排序+EPG+测活）",
   "version": 2,
-  "snapshotDate": "2026-11-23 06:57 UTC",
+  "snapshotDate": "2026-11-23 17:24 UTC",
   "generatedBy": "libretv-aggregate-v2.2",
   "filter": {
     "minRating": 4.0,
