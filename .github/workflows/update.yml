@@ -2,18 +2,19 @@ name: Update Aggregate Sources
 
 on:
   schedule:
-    - cron: '0 */6 * * *'   # 每 6 小时
+    - cron: '0 */6 * * *'
   workflow_dispatch:
 
 concurrency:
   group: update-aggregate-sources
-  cancel-in-progress: true   # 有新任务时取消旧的，只保留最近一次
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write
     steps:
       - uses: actions/checkout@v4
 
@@ -25,53 +26,37 @@ jobs:
       - name: Run merge
         run: python scripts/merge.py
 
-      - name: Validate output
-        id: validate
+      - name: Commit
         run: |
-          set -e
-          test -f dist/sources.json
-          python << 'PY'
-          import json, sys
-          with open("dist/sources.json", encoding="utf-8") as f:
-              data = json.load(f)
-          vod = data.get("sources") or []
-          live = data.get("liveSources") or []
-          if not isinstance(vod, list) or not isinstance(live, list):
-              print("sources/liveSources 格式错误")
-              sys.exit(1)
-          # 至少要有一类可用源，避免空结果覆盖上次成功产物
-          if len(vod) == 0 and len(live) == 0:
-              print("点播和直播都为空，视为失败，不提交")
-              sys.exit(1)
-          # 可选：点播过少也视为异常（按需调整或删掉）
-          # if len(vod) < 3:
-          #     print(f"点播过少 ({len(vod)})，不提交")
-          #     sys.exit(1)
-          print(f"OK: vod={len(vod)}, live={len(live)}")
-          with open("dist/report.json", "a", encoding="utf-8"):
-              pass  # report 允许没有，下面 commit 时再判断
-          PY
-
-      - name: Commit only on success + change
-        run: |
-          set -e
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dist/sources.json dist/tvbox.json
+          git diff --quiet && git diff --staged --quiet || (
+            git commit -m "chore: update sources $(date -u +'%Y-%m-%d %H:%M UTC')" &&
+            git push
+          )
 
-          # report.json 可能不存在时仍可只提交 sources.json
-          FILES="dist/sources.json"
-          if [ -f dist/report.json ]; then
-            FILES="$FILES dist/report.json"
-          fi
-
-          git add $FILES
-
-          if git diff --quiet && git diff --staged --quiet; then
-            echo "No changes to commit"
+      # 只保留最近 2 次 workflow 运行记录（上次 + 这次），其余删除
+      - name: Prune old workflow runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          KEEP=2
+          WORKFLOW_NAME="Update Aggregate Sources"
+          echo "Listing runs for: $WORKFLOW_NAME"
+          # 按时间倒序，跳过最近 KEEP 条，删除更早的
+          mapfile -t RUN_IDS < <(
+            gh api "repos/${{ github.repository }}/actions/workflows/update.yml/runs?per_page=100" \
+              --jq '.workflow_runs[].id'
+          )
+          TOTAL=${#RUN_IDS[@]}
+          echo "Found $TOTAL runs, keep $KEEP"
+          if [ "$TOTAL" -le "$KEEP" ]; then
+            echo "Nothing to prune"
             exit 0
           fi
-
-          VOD=$(python -c "import json;d=json.load(open('dist/sources.json'));print(len(d.get('sources') or []))")
-          LIVE=$(python -c "import json;d=json.load(open('dist/sources.json'));print(len(d.get('liveSources') or []))")
-          git commit -m "chore: update sources $(date -u +'%Y-%m-%d %H:%M UTC') (vod=${VOD}, live=${LIVE})"
-          git push
+          for ((i=KEEP; i<TOTAL; i++)); do
+            RID="${RUN_IDS[$i]}"
+            echo "Deleting run $RID"
+            gh api -X DELETE "repos/${{ github.repository }}/actions/runs/${RID}" || true
+          done
