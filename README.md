@@ -18,7 +18,8 @@
 - jsDelivr：`https://cdn.jsdelivr.net/gh/xuy132/libretv-aggregate@main/dist/sources.json`
 - ghproxy：`https://ghproxy.net/https://raw.githubusercontent.com/xuy132/libretv-aggregate/main/dist/tvbox.json`
 - jsDelivr：`https://cdn.jsdelivr.net/gh/xuy132/libretv-aggregate@main/dist/tvbox.json`
-地址永久固定，无需频繁更换。
+-
+- 地址永久固定，无需频繁更换。
 
 ---
 
