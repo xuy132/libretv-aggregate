@@ -1,8 +1,8 @@
 {
-  "name": "聚合订阅（过滤+排序+EPG）",
+  "name": "聚合订阅（过滤+排序+EPG+测活）",
   "version": 2,
-  "snapshotDate": "2026-11-23 02:54 UTC",
-  "generatedBy": "libretv-aggregate-v2",
+  "snapshotDate": "2026-11-23 03:07 UTC",
+  "generatedBy": "libretv-aggregate-v2.1",
   "filter": {
     "minRating": 4.0,
     "maxResponseMs": 3000,
@@ -332,12 +332,34 @@
     {
       "name": "IPTV-org中国",
       "url": "https://iptv-org.github.io/iptv/countries/cn.m3u",
+      "channelCount": 155,
+      "sampleAlive": 6,
+      "sampleAliveRate": 75.0,
       "epg": "https://iptv-org.github.io/epg/guides/cn.xml.gz"
     },
     {
       "name": "fanmingming",
       "url": "https://live.fanmingming.cn/tv/m3u/ipv6.m3u",
+      "channelCount": 82,
+      "sampleAlive": 0,
+      "sampleAliveRate": 0.0,
       "epg": "https://live.fanmingming.cn/tv/e.xml"
+    },
+    {
+      "name": "IPTV-org香港",
+      "url": "https://iptv-org.github.io/iptv/countries/hk.m3u",
+      "channelCount": 18,
+      "sampleAlive": 0,
+      "sampleAliveRate": 0.0,
+      "epg": "https://iptv-org.github.io/epg/guides/hk.xml.gz"
+    },
+    {
+      "name": "IPTV-org台湾",
+      "url": "https://iptv-org.github.io/iptv/countries/tw.m3u",
+      "channelCount": 34,
+      "sampleAlive": 5,
+      "sampleAliveRate": 62.5,
+      "epg": "https://iptv-org.github.io/epg/guides/tw.xml.gz"
     }
   ]
 }
