@@ -29,6 +29,39 @@ from urllib.parse import urlparse, urlunparse
 # ==================== 可调参数 ====================
 CONFIG_DIR = "config"
 OUTPUT_FILE = "dist/sources.json"
+# ---------- 同时生成 TVBox 配置 ----------
+tvbox_sites = []
+for i, s in enumerate(sources):
+    tvbox_sites.append({
+        "key": f"agg_{i}",
+        "name": s["name"],
+        "type": 1,                    # 苹果 CMS
+        "api": s["url"],
+        "searchable": 1,
+        "quickSearch": 1,
+        "filterable": 1
+    })
+
+tvbox_lives = []
+for live in live_sources:
+    item = {
+        "name": live["name"],
+        "type": 0,
+        "url": live["url"]
+    }
+    if live.get("epg"):
+        item["epg"] = live["epg"]
+    tvbox_lives.append(item)
+
+tvbox_config = {
+    "sites": tvbox_sites,
+    "lives": tvbox_lives
+}
+
+with open("dist/tvbox.json", "w", encoding="utf-8") as f:
+    json.dump(tvbox_config, f, ensure_ascii=False, indent=2)
+
+print(f"TVBox 配置已生成: dist/tvbox.json")
 REPORT_FILE = "dist/report.json"
 
 # 上游自报指标（有则用，无则跳过该项过滤，不靠默认值误杀）
