@@ -9,6 +9,7 @@ LibreTV 聚合订阅生成器 v3.0
 - 点播 API 并发轻量测活，按实测延迟排序
 - 直播均匀抽样测活，按存活率过滤与排序
 - 输出前截断到 LibreTV 上限（点播 100 / 直播 50）
+- 同时生成 TVBox 配置 dist/tvbox.json
 - 支持黑名单、拉取重试、简单变更摘要
 """
 
@@ -19,49 +20,16 @@ import os
 import random
 import re
 import time
-import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from typing import Any
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse
 
 # ==================== 可调参数 ====================
 CONFIG_DIR = "config"
 OUTPUT_FILE = "dist/sources.json"
-# ---------- 同时生成 TVBox 配置 ----------
-tvbox_sites = []
-for i, s in enumerate(sources):
-    tvbox_sites.append({
-        "key": f"agg_{i}",
-        "name": s["name"],
-        "type": 1,                    # 苹果 CMS
-        "api": s["url"],
-        "searchable": 1,
-        "quickSearch": 1,
-        "filterable": 1
-    })
-
-tvbox_lives = []
-for live in live_sources:
-    item = {
-        "name": live["name"],
-        "type": 0,
-        "url": live["url"]
-    }
-    if live.get("epg"):
-        item["epg"] = live["epg"]
-    tvbox_lives.append(item)
-
-tvbox_config = {
-    "sites": tvbox_sites,
-    "lives": tvbox_lives
-}
-
-with open("dist/tvbox.json", "w", encoding="utf-8") as f:
-    json.dump(tvbox_config, f, ensure_ascii=False, indent=2)
-
-print(f"TVBox 配置已生成: dist/tvbox.json")
+TVBOX_FILE = "dist/tvbox.json"
 REPORT_FILE = "dist/report.json"
 
 # 上游自报指标（有则用，无则跳过该项过滤，不靠默认值误杀）
@@ -252,7 +220,6 @@ def process_vod_item(item: dict[str, Any], default_name: str) -> dict[str, Any] 
     if uptime is not None and uptime < MIN_UPTIME:
         return None
 
-    # 上游自报延迟仅作参考，不在这里直接淘汰（交给实测）
     reported_ms = parse_response_ms(item)
 
     return {
@@ -273,14 +240,12 @@ def parse_tvbox(data: dict[str, Any], default_name: str) -> tuple[list[dict], li
     for site in data.get("sites") or []:
         if not isinstance(site, dict):
             continue
-        # type=1 为 JSON 接口；部分配置省略 type 但 api 是 Apple CMS
         stype = site.get("type")
         api = site.get("api") or site.get("url")
         if not api:
             continue
         api = normalize_api(str(api))
         if stype not in (None, 0, 1) and stype != 1:
-            # 明确非 JSON 直连则跳过；仍允许 type 缺失且命中 Apple CMS
             if not is_apple_cms(api):
                 continue
         if stype == 1 or is_apple_cms(api):
@@ -321,9 +286,7 @@ def parse_tvbox(data: dict[str, Any], default_name: str) -> tuple[list[dict], li
 
 
 def probe_vod_api(url: str, timeout: int = PROBE_TIMEOUT) -> int | None:
-    """
-    轻量测活：请求 list 接口，成功解析出 JSON 则返回耗时 ms，否则 None。
-    """
+    """轻量测活：请求 list 接口，成功解析出 JSON 则返回耗时 ms，否则 None。"""
     candidates = [
         f"{url}?ac=list",
         f"{url}?ac=list&pg=1",
@@ -340,17 +303,11 @@ def probe_vod_api(url: str, timeout: int = PROBE_TIMEOUT) -> int | None:
                 body = r.read(65536)
             ms = int((time.perf_counter() - t0) * 1000)
             text = body.decode("utf-8", errors="ignore").lstrip()
-            if not text:
+            if not text or text[0] not in "{[":
                 continue
-            # 粗判 JSON
-            if text[0] not in "{[":
-                continue
-            json.loads(text if len(body) < 65536 else text + "]}"[:0] or text)
-            # 上面 loads 对截断可能失败，再宽松一次
             try:
                 json.loads(text)
             except Exception:
-                # 截断的大 JSON：只要看起来像对象/数组且有 list/code 等字段特征也算活
                 if not re.search(r'"(list|code|msg|data|page)"\s*:', text):
                     continue
             return ms
@@ -401,7 +358,6 @@ def parse_m3u_channels(m3u_content: str) -> list[str]:
                     channels.append(stream)
             i += 2
         else:
-            # 兼容纯 txt：名称,url 或 直接 url
             if line and not line.startswith("#"):
                 if "," in line and not line.startswith("http"):
                     maybe = line.split(",", 1)[-1].strip()
@@ -418,21 +374,18 @@ def uniform_sample(items: list[str], n: int) -> list[str]:
         return list(items)
     if n == 1:
         return [items[len(items) // 2]]
-    # 均匀取点，略加抖动避免永远同一批
     step = (len(items) - 1) / (n - 1)
     idxs = []
     for i in range(n):
         base = int(round(i * step))
         jitter = random.randint(-1, 1) if len(items) > n + 2 else 0
         idxs.append(min(max(base + jitter, 0), len(items) - 1))
-    # 去重并保持数量
     seen = set()
     out = []
     for i in idxs:
         if i not in seen:
             seen.add(i)
             out.append(items[i])
-    # 不足则随机补
     while len(out) < n:
         j = random.randrange(len(items))
         if j not in seen:
@@ -476,8 +429,7 @@ def analyze_live_source(url: str) -> tuple[int, int, float]:
         return 0, 0, 0.0
 
 
-def extract_items_from_payload(data: Any) -> tuple[list, str]:
-    """返回 (items 或 None 表示 TVBox 已处理标记, kind)。"""
+def extract_items_from_payload(data: Any) -> tuple[Any, str]:
     if isinstance(data, list):
         return data, "list"
     if not isinstance(data, dict):
@@ -490,7 +442,9 @@ def extract_items_from_payload(data: Any) -> tuple[list, str]:
     return [], "empty"
 
 
-def process_one_vod_feed(conf: dict[str, Any], seen_vod: set[str], seen_live: set[str]) -> tuple[list, list]:
+def process_one_vod_feed(
+    conf: dict[str, Any], seen_vod: set[str], seen_live: set[str]
+) -> tuple[list, list]:
     name, url = conf["name"], conf["url"]
     print(f"[VOD] {name}")
     sources: list[dict] = []
@@ -514,7 +468,9 @@ def process_one_vod_feed(conf: dict[str, Any], seen_vod: set[str], seen_live: se
                     continue
                 seen_live.add(key)
                 lives.append(l)
-            print(f"    → TVBox：点播候选 {len(tv_sources)}，直播 {len(tv_lives)}，入库点播 {len(sources)}")
+            print(
+                f"    → TVBox：点播候选 {len(tv_sources)}，直播 {len(tv_lives)}，入库点播 {len(sources)}"
+            )
             return sources, lives
 
         count = 0
@@ -546,11 +502,49 @@ def load_previous_urls(path: str) -> tuple[set[str], set[str]]:
     try:
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
-        vod = {normalize_url_key(s["url"]) for s in data.get("sources") or [] if s.get("url")}
-        live = {normalize_url_key(s["url"]) for s in data.get("liveSources") or [] if s.get("url")}
+        vod = {
+            normalize_url_key(s["url"])
+            for s in data.get("sources") or []
+            if s.get("url")
+        }
+        live = {
+            normalize_url_key(s["url"])
+            for s in data.get("liveSources") or []
+            if s.get("url")
+        }
         return vod, live
     except Exception:
         return set(), set()
+
+
+def build_tvbox_config(vod_out: list[dict], live_out: list[dict]) -> dict:
+    """把聚合结果转成 TVBox / 影视仓可用的配置。"""
+    sites = []
+    for i, s in enumerate(vod_out):
+        sites.append(
+            {
+                "key": f"agg_{i}",
+                "name": s["name"],
+                "type": 1,  # 苹果 CMS
+                "api": s["url"],
+                "searchable": 1,
+                "quickSearch": 1,
+                "filterable": 1,
+            }
+        )
+
+    lives = []
+    for live in live_out:
+        item: dict[str, Any] = {
+            "name": live["name"],
+            "type": 0,
+            "url": live["url"],
+        }
+        if live.get("epg"):
+            item["epg"] = live["epg"]
+        lives.append(item)
+
+    return {"sites": sites, "lives": lives}
 
 
 def main() -> None:
@@ -565,11 +559,10 @@ def main() -> None:
     seen_vod: set[str] = set()
     seen_live: set[str] = set()
 
-    # ---------- 点播上游（可并发拉订阅）----------
+    # ---------- 点播上游 ----------
     vod_list = load_config(os.path.join(CONFIG_DIR, "vod_sources.txt"))
     print(f"开始处理 {len(vod_list)} 个点播订阅...\n")
 
-    # 串行拉订阅更稳（上游少）；内部探测再并发
     for conf in vod_list:
         s, l = process_one_vod_feed(conf, seen_vod, seen_live)
         candidates.extend(s)
@@ -594,7 +587,6 @@ def main() -> None:
 
     live_sources: list[dict] = []
 
-    # 合并配置里的直播 + 上游 TVBox 带出的直播
     pending_live: list[dict] = []
     for conf in live_list:
         url = conf["url"]
@@ -642,7 +634,6 @@ def main() -> None:
         print(f"\n直播截断: {len(live_sources)} → {MAX_LIVE_SOURCES}")
         live_sources = live_sources[:MAX_LIVE_SOURCES]
 
-    # 输出给 LibreTV 的字段
     live_out = []
     for item in live_sources:
         o = {"name": item["name"], "url": item["url"]}
@@ -687,10 +678,17 @@ def main() -> None:
     }
 
     os.makedirs("dist", exist_ok=True)
+
+    # LibreTV
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=2)
 
-    # 详细报告（含测活字段，不给客户端用）
+    # TVBox / 影视仓
+    tvbox_config = build_tvbox_config(vod_out, live_out)
+    with open(TVBOX_FILE, "w", encoding="utf-8") as f:
+        json.dump(tvbox_config, f, ensure_ascii=False, indent=2)
+
+    # 详细报告（含测活字段）
     report = {
         "snapshotDate": snapshot,
         "vodProbed": [
@@ -712,8 +710,9 @@ def main() -> None:
     print("\n========== 完成 ==========")
     print(f"点播源: {len(vod_out)} 个（候选 {len(candidates)}，+{added_vod}/-{removed_vod}）")
     print(f"直播源: {len(live_out)} 个（+{added_live}/-{removed_live}）")
-    print(f"输出: {OUTPUT_FILE}")
-    print(f"报告: {REPORT_FILE}")
+    print(f"LibreTV: {OUTPUT_FILE}")
+    print(f"TVBox:   {TVBOX_FILE}")
+    print(f"报告:    {REPORT_FILE}")
 
 
 if __name__ == "__main__":
