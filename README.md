@@ -1,6 +1,6 @@
 # libretv-aggregate
 
-定期聚合多个上游点播/直播源，**实测可用性**后生成 LibreTV 订阅 JSON。
+定期聚合多个上游点播/直播源，**实测可用性**后生成 LibreTV / Tvbox订阅 JSON。
 
 - 点播：并发探测 Apple CMS 接口，按延迟排序，截断至 100
 - 直播：均匀抽样测活，按存活率过滤排序，截断至 50
@@ -9,13 +9,15 @@
 ## 订阅地址
 
 在 LibreTV「设置 → 数据源 → 数据源订阅」粘贴：https://raw.githubusercontent.com/xuy132/libretv-aggregate/main/dist/sources.json
+TVBox：设置 → 配置地址 → 粘贴：https://raw.githubusercontent.com/xuy132/libretv-aggregate/main/dist/tvbox.json
 点「添加并同步」即可。地址固定，无需更换。
 
 ### 备用
 
 - ghproxy：`https://ghproxy.net/https://raw.githubusercontent.com/xuy132/libretv-aggregate/main/dist/sources.json`
 - jsDelivr：`https://cdn.jsdelivr.net/gh/xuy132/libretv-aggregate@main/dist/sources.json`
-
+- ghproxy：`https://ghproxy.net/https://raw.githubusercontent.com/xuy132/libretv-aggregate/main/dist/tvbox.json`
+- jsDelivr：`https://cdn.jsdelivr.net/gh/xuy132/libretv-aggregate@main/dist/tvbox.json`
 地址永久固定，无需频繁更换。
 
 ---
