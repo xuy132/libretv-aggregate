@@ -1,7 +1,7 @@
 {
   "name": "聚合订阅（过滤+排序+EPG）",
   "version": 2,
-  "snapshotDate": "2026-11-23 02:43 UTC",
+  "snapshotDate": "2026-11-23 02:54 UTC",
   "generatedBy": "libretv-aggregate-v2",
   "filter": {
     "minRating": 4.0,
@@ -330,21 +330,9 @@
   ],
   "liveSources": [
     {
-      "name": "xuy132综合",
-      "url": "https://raw.githubusercontent.com/xuy132/collect-tv-txt/main/merged_output.m3u"
-    },
-    {
-      "name": "xuy132精简",
-      "url": "https://raw.githubusercontent.com/xuy132/collect-tv-txt/main/live_lite.m3u"
-    },
-    {
       "name": "IPTV-org中国",
       "url": "https://iptv-org.github.io/iptv/countries/cn.m3u",
       "epg": "https://iptv-org.github.io/epg/guides/cn.xml.gz"
-    },
-    {
-      "name": "YueChan港澳台",
-      "url": "https://raw.githubusercontent.com/YueChan/Live/main/GNTV.m3u"
     },
     {
       "name": "fanmingming",
