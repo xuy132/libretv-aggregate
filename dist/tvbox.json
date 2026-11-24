@@ -480,34 +480,10 @@
   ],
   "lives": [
     {
-      "name": "IPTV-org香港",
-      "type": 0,
-      "url": "https://iptv-org.github.io/iptv/countries/hk.m3u",
-      "epg": "https://iptv-org.github.io/epg/guides/hk.xml.gz"
-    },
-    {
-      "name": "IPTV-org台湾",
-      "type": 0,
-      "url": "https://iptv-org.github.io/iptv/countries/tw.m3u",
-      "epg": "https://iptv-org.github.io/epg/guides/tw.xml.gz"
-    },
-    {
       "name": "聚合全部",
       "type": 0,
       "url": "https://raw.githubusercontent.com/xuy132/m3u-epg-validator/main/output/result.m3u",
       "epg": "https://epg.51zmt.top:8000/e.xml.gz"
-    },
-    {
-      "name": "聚合IPv4",
-      "type": 0,
-      "url": "https://raw.githubusercontent.com/xuy132/m3u-epg-validator/main/epg/ipv4/result.m3u",
-      "epg": "https://epg.pw/xmltv/epg_CN.xml"
-    },
-    {
-      "name": "聚合IPv6",
-      "type": 0,
-      "url": "https://raw.githubusercontent.com/xuy132/m3u-epg-validator/main/epg/ipv6/result.m3u",
-      "epg": "https://epg.pw/xmltv/epg_CN.xml"
     }
   ]
 }
