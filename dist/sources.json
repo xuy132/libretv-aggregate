@@ -1,7 +1,7 @@
 {
   "name": "聚合订阅（过滤+排序+EPG+测活）",
   "version": 2,
-  "snapshotDate": "2026-11-24 01:09 UTC",
+  "snapshotDate": "2026-11-24 03:49 UTC",
   "generatedBy": "libretv-aggregate-v2.2",
   "filter": {
     "minRating": 4.0,
@@ -348,10 +348,34 @@
     {
       "name": "TV仓库精选",
       "url": "https://raw.githubusercontent.com/xuy132/TV/master/output/result.m3u",
-      "channelCount": 235,
-      "sampleAlive": 7,
-      "sampleAliveRate": 87.5,
+      "channelCount": 0,
+      "sampleAlive": 0,
+      "sampleAliveRate": 0.0,
       "epg": "https://raw.githubusercontent.com/xuy132/TV/master/output/epg/epg.gz"
+    },
+    {
+      "name": "聚合直播",
+      "url": "https://raw.githubusercontent.com/xuy132/m3u-epg-validator/main/epg/result.m3u",
+      "channelCount": 0,
+      "sampleAlive": 0,
+      "sampleAliveRate": 0.0,
+      "epg": "https://epg.pw/xmltv/epg_CN.xml"
+    },
+    {
+      "name": "聚合IPv4",
+      "url": "https://raw.githubusercontent.com/xuy132/m3u-epg-validator/main/epg/ipv4/result.m3u",
+      "channelCount": 0,
+      "sampleAlive": 0,
+      "sampleAliveRate": 0.0,
+      "epg": "https://epg.pw/xmltv/epg_CN.xml"
+    },
+    {
+      "name": "聚合IPv6",
+      "url": "https://raw.githubusercontent.com/xuy132/m3u-epg-validator/main/epg/ipv6/result.m3u",
+      "channelCount": 0,
+      "sampleAlive": 0,
+      "sampleAliveRate": 0.0,
+      "epg": "https://epg.pw/xmltv/epg_CN.xml"
     }
   ]
 }

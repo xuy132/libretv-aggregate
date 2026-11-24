@@ -496,6 +496,24 @@
       "type": 0,
       "url": "https://raw.githubusercontent.com/xuy132/TV/master/output/result.m3u",
       "epg": "https://raw.githubusercontent.com/xuy132/TV/master/output/epg/epg.gz"
+    },
+    {
+      "name": "聚合直播",
+      "type": 0,
+      "url": "https://raw.githubusercontent.com/xuy132/m3u-epg-validator/main/epg/result.m3u",
+      "epg": "https://epg.pw/xmltv/epg_CN.xml"
+    },
+    {
+      "name": "聚合IPv4",
+      "type": 0,
+      "url": "https://raw.githubusercontent.com/xuy132/m3u-epg-validator/main/epg/ipv4/result.m3u",
+      "epg": "https://epg.pw/xmltv/epg_CN.xml"
+    },
+    {
+      "name": "聚合IPv6",
+      "type": 0,
+      "url": "https://raw.githubusercontent.com/xuy132/m3u-epg-validator/main/epg/ipv6/result.m3u",
+      "epg": "https://epg.pw/xmltv/epg_CN.xml"
     }
   ]
 }
