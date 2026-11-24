@@ -4,3 +4,6 @@
 IPTV-org香港|https://iptv-org.github.io/iptv/countries/hk.m3u|https://iptv-org.github.io/epg/guides/hk.xml.gz
 IPTV-org台湾|https://iptv-org.github.io/iptv/countries/tw.m3u|https://iptv-org.github.io/epg/guides/tw.xml.gz
 TV仓库精选|https://raw.githubusercontent.com/xuy132/TV/master/output/result.m3u|https://raw.githubusercontent.com/xuy132/TV/master/output/epg/epg.gz
+聚合直播|https://raw.githubusercontent.com/xuy132/m3u-epg-validator/main/epg/result.m3u|https://epg.pw/xmltv/epg_CN.xml
+聚合IPv4|https://raw.githubusercontent.com/xuy132/m3u-epg-validator/main/epg/ipv4/result.m3u|https://epg.pw/xmltv/epg_CN.xml
+聚合IPv6|https://raw.githubusercontent.com/xuy132/m3u-epg-validator/main/epg/ipv6/result.m3u|https://epg.pw/xmltv/epg_CN.xml
