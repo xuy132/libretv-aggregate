@@ -480,18 +480,6 @@
   ],
   "lives": [
     {
-      "name": "IPTV-org中国",
-      "type": 0,
-      "url": "https://iptv-org.github.io/iptv/countries/cn.m3u",
-      "epg": "https://iptv-org.github.io/epg/guides/cn.xml.gz"
-    },
-    {
-      "name": "fanmingming",
-      "type": 0,
-      "url": "https://live.fanmingming.cn/tv/m3u/ipv6.m3u",
-      "epg": "https://live.fanmingming.cn/tv/e.xml"
-    },
-    {
       "name": "IPTV-org香港",
       "type": 0,
       "url": "https://iptv-org.github.io/iptv/countries/hk.m3u",
