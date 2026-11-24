@@ -492,16 +492,10 @@
       "epg": "https://iptv-org.github.io/epg/guides/tw.xml.gz"
     },
     {
-      "name": "TV仓库精选",
+      "name": "聚合全部",
       "type": 0,
-      "url": "https://raw.githubusercontent.com/xuy132/TV/master/output/result.m3u",
-      "epg": "https://raw.githubusercontent.com/xuy132/TV/master/output/epg/epg.gz"
-    },
-    {
-      "name": "聚合直播",
-      "type": 0,
-      "url": "https://raw.githubusercontent.com/xuy132/m3u-epg-validator/main/epg/result.m3u",
-      "epg": "https://epg.pw/xmltv/epg_CN.xml"
+      "url": "https://raw.githubusercontent.com/xuy132/m3u-epg-validator/main/output/result.m3u",
+      "epg": "https://epg.51zmt.top:8000/e.xml.gz"
     },
     {
       "name": "聚合IPv4",
