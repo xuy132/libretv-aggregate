@@ -1,7 +1,7 @@
 {
   "name": "聚合订阅（过滤+排序+EPG+测活）",
   "version": 2,
-  "snapshotDate": "2026-11-27 16:07 UTC",
+  "snapshotDate": "2026-11-28 01:04 UTC",
   "generatedBy": "libretv-aggregate-v2.2",
   "filter": {
     "minRating": 4.0,
@@ -332,9 +332,9 @@
     {
       "name": "聚合全部",
       "url": "https://raw.githubusercontent.com/xuy132/m3u-epg-validator/main/output/ipv4/result.m3u",
-      "channelCount": 1044,
-      "sampleAlive": 8,
-      "sampleAliveRate": 100.0,
+      "channelCount": 1035,
+      "sampleAlive": 7,
+      "sampleAliveRate": 87.5,
       "epg": "https://raw.githubusercontent.com/xuy132/m3u-epg-validator/main/output/epg/e.xml"
     }
   ]
